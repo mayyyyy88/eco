@@ -1,0 +1,224 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>EcoAI - Station Data Table</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f3f6f4;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #228B22;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 26px;
+    }
+    #controls {
+      text-align: center;
+      background: #ffffff;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    label {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    input[type=number] {
+      font-size: 16px;
+      padding: 5px 10px;
+      width: 80px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      margin: 5px;
+      border-radius: 4px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      width: 90%;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background-color: #2e8b57;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  🌿 AI-Driven Environmental Data Table (Al Ain Stations)
+</header>
+
+<div id="controls">
+  <div style="margin-bottom: 10px;">
+    <label>Select Year:</label>
+    <input type="number" id="yearSelect" min="1984" max="2034" value="2025" onchange="updateTable()" />
+  </div>
+  <div>
+    <label>Select Station:</label><br>
+    <button onclick="selectStation('All')">All</button>
+    <button onclick="selectStation('Zakher')">Zakher</button>
+    <button onclick="selectStation('Al Ain Islamic Institute')">Institute</button>
+    <button onclick="selectStation('Al Ain Street')">Street</button>
+    <button onclick="selectStation('Al Tawia')">Tawia</button>
+    <button onclick="selectStation('Al Qua’a')">Qua’a</button>
+  </div>
+</div>
+
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>Station</th>
+      <th>AQI</th>
+      <th>CO₂ (ppm)</th>
+      <th>PM2.5 (µg/m³)</th>
+      <th>Temperature (°C)</th>
+      <th>Humidity (%)</th>
+      <th>Green Area</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+
+const airQualityData = {
+  "2025": [
+    { name: "Zakher", aqi: 80, co2: 420, pm2_5: 18, temp: 34, humidity: 55, green: "Medium" },
+    { name: "Al Ain Islamic Institute", aqi: 65, co2: 400, pm2_5: 15, temp: 33, humidity: 60, green: "High" },
+    { name: "Al Ain Street", aqi: 90, co2: 430, pm2_5: 20, temp: 35, humidity: 50, green: "Medium" },
+    { name: "Al Tawia", aqi: 70, co2: 410, pm2_5: 17, temp: 32, humidity: 58, green: "High" },
+    { name: "Al Qua’a", aqi: 95, co2: 450, pm2_5: 22, temp: 36, humidity: 52, green: "Low" }
+  ],
+  "2026": [
+    { name: "Zakher", aqi: 81, co2: 422, pm2_5: 18, temp: 34, humidity: 55, green: "Medium" },
+    { name: "Al Ain Islamic Institute", aqi: 66, co2: 402, pm2_5: 15, temp: 33, humidity: 60, green: "High" },
+    { name: "Al Ain Street", aqi: 91, co2: 432, pm2_5: 20, temp: 35, humidity: 50, green: "Medium" },
+    { name: "Al Tawia", aqi: 71, co2: 412, pm2_5: 17, temp: 32, humidity: 58, green: "High" },
+    { name: "Al Qua’a", aqi: 96, co2: 452, pm2_5: 22, temp: 36, humidity: 52, green: "Low" }
+  ],
+  "2027": [
+    { name: "Zakher", aqi: 82, co2: 424, pm2_5: 18, temp: 34, humidity: 55, green: "Medium" },
+    { name: "Al Ain Islamic Institute", aqi: 67, co2: 404, pm2_5: 15, temp: 33, humidity: 60, green: "High" },
+    { name: "Al Ain Street", aqi: 92, co2: 434, pm2_5: 20, temp: 35, humidity: 50, green: "Medium" },
+    { name: "Al Tawia", aqi: 72, co2: 414, pm2_5: 17, temp: 32, humidity: 58, green: "High" },
+    { name: "Al Qua’a", aqi: 97, co2: 454, pm2_5: 22, temp: 36, humidity: 52, green: "Low" }
+  ],
+  "2028": [
+    { name: "Zakher", aqi: 83, co2: 426, pm2_5: 18, temp: 34, humidity: 55, green: "Medium" },
+    { name: "Al Ain Islamic Institute", aqi: 68, co2: 406, pm2_5: 15, temp: 33, humidity: 60, green: "High" },
+    { name: "Al Ain Street", aqi: 93, co2: 436, pm2_5: 20, temp: 35, humidity: 50, green: "Medium" },
+    { name: "Al Tawia", aqi: 73, co2: 416, pm2_5: 17, temp: 32, humidity: 58, green: "High" },
+    { name: "Al Qua’a", aqi: 98, co2: 456, pm2_5: 22, temp: 36, humidity: 52, green: "Low" }
+  ],
+  "2029": [
+    { name: "Zakher", aqi: 84, co2: 428, pm2_5: 18, temp: 34, humidity: 55, green: "Medium" },
+    { name: "Al Ain Islamic Institute", aqi: 69, co2: 408, pm2_5: 15, temp: 33, humidity: 60, green: "High" },
+    { name: "Al Ain Street", aqi: 94, co2: 438, pm2_5: 20, temp: 35, humidity: 50, green: "Medium" },
+    { name: "Al Tawia", aqi: 74, co2: 418, pm2_5: 17, temp: 32, humidity: 58, green: "High" },
+    { name: "Al Qua’a", aqi: 99, co2: 458, pm2_5: 22, temp: 36, humidity: 52, green: "Low" }
+  ],
+  "2030": [
+    { name: "Zakher", aqi: 85, co2: 430, pm2_5: 18, temp: 34, humidity: 55, green: "Medium" },
+    { name: "Al Ain Islamic Institute", aqi: 70, co2: 410, pm2_5: 15, temp: 33, humidity: 60, green: "High" },
+    { name: "Al Ain Street", aqi: 95, co2: 440, pm2_5: 20, temp: 35, humidity: 50, green: "Medium" },
+    { name: "Al Tawia", aqi: 75, co2: 420, pm2_5: 17, temp: 32, humidity: 58, green: "High" },
+    { name: "Al Qua’a", aqi: 100, co2: 460, pm2_5: 22, temp: 36, humidity: 52, green: "Low" }
+  ],
+  "2031": [
+    { name: "Zakher", aqi: 86, co2: 432, pm2_5: 18, temp: 34, humidity: 55, green: "Medium" },
+    { name: "Al Ain Islamic Institute", aqi: 71, co2: 412, pm2_5: 15, temp: 33, humidity: 60, green: "High" },
+    { name: "Al Ain Street", aqi: 96, co2: 442, pm2_5: 20, temp: 35, humidity: 50, green: "Medium" },
+    { name: "Al Tawia", aqi: 76, co2: 422, pm2_5: 17, temp: 32, humidity: 58, green: "High" },
+    { name: "Al Qua’a", aqi: 101, co2: 462, pm2_5: 22, temp: 36, humidity: 52, green: "Low" }
+  ],
+  "2032": [
+    { name: "Zakher", aqi: 87, co2: 434, pm2_5: 18, temp: 34, humidity: 55, green: "Medium" },
+    { name: "Al Ain Islamic Institute", aqi: 72, co2: 414, pm2_5: 15, temp: 33, humidity: 60, green: "High" },
+    { name: "Al Ain Street", aqi: 97, co2: 444, pm2_5: 20, temp: 35, humidity: 50, green: "Medium" },
+    { name: "Al Tawia", aqi: 77, co2: 424, pm2_5: 17, temp: 32, humidity: 58, green: "High" },
+    { name: "Al Qua’a", aqi: 102, co2: 464, pm2_5: 22, temp: 36, humidity: 52, green: "Low" }
+  ],
+  "2033": [
+    { name: "Zakher", aqi: 88, co2: 436, pm2_5: 18, temp: 34, humidity: 55, green: "Medium" },
+    { name: "Al Ain Islamic Institute", aqi: 73, co2: 416, pm2_5: 15, temp: 33, humidity: 60, green: "High" },
+    { name: "Al Ain Street", aqi: 98, co2: 446, pm2_5: 20, temp: 35, humidity: 50, green: "Medium" },
+    { name: "Al Tawia", aqi: 78, co2: 426, pm2_5: 17, temp: 32, humidity: 58, green: "High" },
+    { name: "Al Qua’a", aqi: 103, co2: 466, pm2_5: 22, temp: 36, humidity: 52, green: "Low" }
+  ],
+  "2034": [
+    { name: "Zakher", aqi: 89, co2: 438, pm2_5: 18, temp: 34, humidity: 55, green: "Medium" },
+    { name: "Al Ain Islamic Institute", aqi: 74, co2: 418, pm2_5: 15, temp: 33, humidity: 60, green: "High" },
+    { name: "Al Ain Street", aqi: 99, co2: 448, pm2_5: 20, temp: 35, humidity: 50, green: "Medium" },
+    { name: "Al Tawia", aqi: 79, co2: 428, pm2_5: 17, temp: 32, humidity: 58, green: "High" },
+    { name: "Al Qua’a", aqi: 104, co2: 468, pm2_5: 22, temp: 36, humidity: 52, green: "Low" }
+  ]
+};
+
+let currentStation = "All";
+
+function selectStation(name) {
+  currentStation = name;
+  updateTable();
+}
+
+function updateTable() {
+  const year = document.getElementById("yearSelect").value;
+  const data = airQualityData[year];
+  const tbody = document.querySelector("#dataTable tbody");
+  tbody.innerHTML = "";
+
+  if (!data) return;
+
+  data.forEach(entry => {
+    if (currentStation === "All" || entry.name === currentStation) {
+      const row = `
+        <tr>
+          <td>${entry.name}</td>
+          <td>${entry.aqi}</td>
+          <td>${entry.co2}</td>
+          <td>${entry.pm2_5}</td>
+          <td>${entry.temp}</td>
+          <td>${entry.humidity}</td>
+          <td>${entry.green}</td>
+        </tr>`;
+      tbody.innerHTML += row;
+    }
+  });
+}
+
+window.onload = updateTable;
+</script>
+
+
+<section style="margin: 40px auto; text-align:center;">
+  <h2>🌍 Google Earth Timelapse (1984–2022)</h2>
+  <iframe width="90%" height="500" 
+    src="https://earthengine.google.com/iframes/timelapse_player_embed.html#v=24.06632,55.71665,8.747,latLng&t=0.03&ps=50&bt=19840101&et=20221231" 
+    frameborder="0" allowfullscreen>
+  </iframe>
+</section>
+</body>
+
+</html>

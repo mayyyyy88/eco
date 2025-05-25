@@ -1,0 +1,95 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>EcoAI Station Filter</title>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.css" rel="stylesheet" />
+  <style>
+    body { margin: 0; font-family: Arial; }
+    #map { width: 100%; height: 600px; }
+    #controls { text-align: center; padding: 10px; background: #f0f0f0; }
+    button { margin: 5px; padding: 8px 14px; font-size: 16px; }
+  </style>
+</head>
+<body>
+
+<div id="controls">
+  <label><b>Select Year:</b></label>
+  <input type="number" id="yearSelect" min="1984" max="2034" value="2025" onchange="updateMap()" />
+  <br><br>
+  <label><b>Select Station:</b></label><br>
+  <button onclick="selectStation('All')">All</button>
+  <button onclick="selectStation('Zakher')">Zakher</button>
+  <button onclick="selectStation('Al Ain Islamic Institute')">Al Ain Islamic Institute</button>
+  <button onclick="selectStation('Al Ain Street')">Al Ain Street</button>
+  <button onclick="selectStation('Al Tawia')">Al Tawia</button>
+  <button onclick="selectStation('Al Qua’a')">Al Qua’a</button>
+</div>
+
+<div id="map"></div>
+
+<script>
+mapboxgl.accessToken = 'pk.eyJ1IjoibWFpdGhhNjc4IiwiYSI6ImNtOGRsNGk4YjAxNzcybXBoOGxjYmc1YmkifQ._xyJ17PDEOH_ReuMDqd2QA';
+const map = new mapboxgl.Map({
+  container: 'map',
+  style: 'mapbox://styles/mapbox/satellite-streets-v11',
+  center: [55.75, 24.22],
+  zoom: 11
+});
+
+const airQualityData = {
+  "2025": [
+    { name: "Zakher", coords: [55.7058, 24.1902], aqi: 80, co2: 420, pm2_5: 18, temp: 34, humidity: 55, green: "Medium" },
+    { name: "Al Ain Islamic Institute", coords: [55.7507, 24.2184], aqi: 65, co2: 400, pm2_5: 15, temp: 33, humidity: 60, green: "High" },
+    { name: "Al Ain Street", coords: [55.7642, 24.2250], aqi: 90, co2: 430, pm2_5: 20, temp: 35, humidity: 50, green: "Medium" },
+    { name: "Al Tawia", coords: [55.7558, 24.2514], aqi: 70, co2: 410, pm2_5: 17, temp: 32, humidity: 58, green: "High" },
+    { name: "Al Qua’a", coords: [55.108, 23.3138], aqi: 95, co2: 450, pm2_5: 22, temp: 36, humidity: 52, green: "Low" }
+  ]
+};
+
+let currentStation = "All";
+let markers = [];
+
+function selectStation(stationName) {
+  currentStation = stationName;
+  updateMap();
+}
+
+function updateMap() {
+  const selectedYear = document.getElementById("yearSelect").value;
+  const data = airQualityData[selectedYear];
+  if (!data) return;
+
+  // Clear all existing markers
+  markers.forEach(m => m.remove());
+  markers = [];
+
+  data.forEach(entry => {
+    if (currentStation === "All" || entry.name === currentStation) {
+      const popup = new mapboxgl.Popup().setHTML(
+        `<div style='color:black'>
+          <b>${entry.name}</b><br>
+          AQI: ${entry.aqi}<br>
+          CO₂: ${entry.co2} ppm<br>
+          PM2.5: ${entry.pm2_5} µg/m³<br>
+          🌡️ Temp: ${entry.temp}°C<br>
+          💧 Humidity: ${entry.humidity}%<br>
+          🌱 Green Area: ${entry.green}
+        </div>`
+      );
+      const marker = new mapboxgl.Marker()
+        .setLngLat(entry.coords)
+        .setPopup(popup)
+        .addTo(map);
+      markers.push(marker);
+    }
+  });
+}
+
+map.on('load', updateMap);
+</script>
+
+</body>
+</html>
