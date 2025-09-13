@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EcoAI: Greening of Al Ain (1984–2050) — No CSV</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background-color: #f4f4f4; }
+    #title { background: #228B22; color: white; text-align: center; padding: 10px; font-size: 24px; }
+    iframe { display: block; margin: 16px auto; border: none; }
+    #panel { max-width: 1100px; margin: 0 auto; padding: 0 12px 20px; }
+    #toolbar { text-align: center; }
+    #yearSlider { width: 420px; margin: 10px; }
+    #dataPanel {
+      margin: 12px auto; max-width: 1100px; background: white; padding: 10px; border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    table { margin: auto; border-collapse: collapse; width: 100%; }
+    th, td { padding: 8px 12px; border: 1px solid #ccc; }
+    th { background: #228B22; color: white; }
+    #map { height: 440px; width: 100%; border-radius: 8px; border: 1px solid #ccc; }
+    .btn { background:#228B22; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div id="title">🌿 EcoAI: Greening of Al Ain (1984–2050)</div>
+
+  <!-- Timelapse, kept like original -->
+  <iframe width="1080" height="600"
+    src="https://earthengine.google.com/iframes/timelapse_player_embed.html#v=24.06632,55.71665,8.747,latLng&t=0.03&ps=50&bt=19840101&et=20221231"
+    allowfullscreen></iframe>
+
+  <div id="panel">
+    <div id="toolbar">
+      <label for="yearSlider"><strong>Select Year:</strong></label>
+      <input type="range" min="1984" max="2050" value="2025" step="1" id="yearSlider" oninput="updateYear(this.value)" />
+      <span id="selectedYear">2025</span>
+      <br>
+      <label for="stationFilter"><strong>Select Station:</strong></label>
+      <select id="stationFilter" onchange="refresh()">
+        <option value="All">All</option>
+        <option>Al Ain Islamic Institute</option>
+        <option>Al Ain Street</option>
+        <option>Al Qua’a</option>
+        <option>Al Tawia</option>
+        <option>Zakher</option>
+      </select>
+    </div>
+
+    <div id="dataPanel">
+      <h2>📍 Environmental Data by Station</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Station</th>
+            <th>AQI</th>
+            <th>CO₂ (ppm)</th>
+            <th>PM2.5 (µg/m³)</th>
+            <th>Temp (°C)</th>
+            <th>Humidity (%)</th>
+            <th>Green Status</th>
+          </tr>
+        </thead>
+        <tbody id="dataTable"></tbody>
+      </table>
+    </div>
+
+    <h2>🗺️ Interactive Map</h2>
+    <div id="map"></div>
+  </div>
+
+  <script>
+    const STATIONS = ['Al Ain Islamic Institute','Al Ain Street','Al Qua’a','Al Tawia','Zakher'];
+
+    const STATION_COORDS = {
+      'Al Ain Islamic Institute': [24.20750, 55.74400],
+      'Al Ain Street': [24.21600, 55.76600],
+      'Al Qua’a': [23.55900, 55.38100],
+      'Al Tawia': [24.13100, 55.80200],
+      'Zakher': [24.17400, 55.69900]
+    };
+
+    const STEPS = { temp: 0.05, co2: 1.5, pm25: 0.05, aqi: 0.6, hum: -0.2, green: 0.8 };
+
+    const BASE_1984 = {
+      'Al Ain Islamic Institute': { temp:31.0, co2:340.0, pm25:11.0, aqi:55.0, hum:65.0, green:40.0 },
+      'Al Ain Street':           { temp:33.0, co2:360.0, pm25:14.0, aqi:65.0, hum:58.0, green:35.0 },
+      'Al Qua’a':                { temp:34.0, co2:370.0, pm25:16.0, aqi:70.0, hum:55.0, green:25.0 },
+      'Al Tawia':                { temp:30.0, co2:345.0, pm25:10.0, aqi:58.0, hum:63.0, green:38.0 },
+      'Zakher':                  { temp:32.0, co2:350.0, pm25:12.0, aqi:60.0, hum:60.0, green:30.0 }
+    };
+
+    function clamp01(v){ return Math.max(0, Math.min(100, v)); }
+    function greenStatus(p){ if(p>=60) return 'High'; if(p>=40) return 'Medium'; return 'Low'; }
+
+    function getValues(station, year){
+      const base = BASE_1984[station];
+      const dy = (year - 1984);
+      const temp = base.temp + STEPS.temp * dy;
+      const co2  = base.co2  + STEPS.co2  * dy;
+      const pm25 = base.pm25 + STEPS.pm25 * dy;
+      const aqi  = base.aqi  + STEPS.aqi  * dy;
+      const hum  = clamp01(base.hum + STEPS.hum * dy);
+      const green= clamp01(base.green + STEPS.green * dy);
+      return { temp:round(temp), co2:round(co2), pm25:round(pm25), aqi:round(aqi), hum:round(hum), green:round(green), status: greenStatus(green) };
+    }
+
+    function round(x){ return Math.round(x * 100) / 100; }
+
+    const map = L.map('map').setView([24.2075,55.7440], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+    let markers = [];
+    function clearMarkers(){ markers.forEach(m => map.removeLayer(m)); markers=[]; }
+    function addMarker(station, values){
+      const coords = STATION_COORDS[station];
+      if (!coords) return;
+      const [lat,lng] = coords;
+      const html = `<b>${station}</b><br/>AQI: ${values.aqi}<br/>CO₂: ${values.co2} ppm`+
+                   `<br/>PM2.5: ${values.pm25} µg/m³<br/>Temp: ${values.temp} °C`+
+                   `<br/>Humidity: ${values.hum} %<br/>Green: ${values.green} %`+
+                   `<br/>Status: ${values.status}`;
+      const m = L.marker([lat,lng]).bindPopup(html).addTo(map);
+      markers.push(m);
+    }
+
+    const yearSlider = document.getElementById('yearSlider');
+    const selectedYearSpan = document.getElementById('selectedYear');
+    const stationFilter = document.getElementById('stationFilter');
+
+    function updateYear(y){ selectedYearSpan.textContent = y; refresh(); }
+
+    function refresh(){
+      const year = parseInt(yearSlider.value,10);
+      const filter = stationFilter.value;
+      const tbody = document.getElementById('dataTable');
+      tbody.innerHTML = '';
+      clearMarkers();
+      const stationsNow = (filter === 'All') ? STATIONS : [filter];
+      const bounds = [];
+
+      stationsNow.forEach(st => {
+        const v = getValues(st, year);
+        const tr = document.createElement('tr');
+        [st, v.aqi, v.co2, v.pm25, v.temp, v.hum, v.status].forEach(val => {
+          const td = document.createElement('td'); td.textContent = val; tr.appendChild(td); });
+        tbody.appendChild(tr);
+        if (STATION_COORDS[st]){ addMarker(st, v); bounds.push(STATION_COORDS[st]); }
+      });
+      if (bounds.length){ map.fitBounds(bounds, { padding: [20,20] }); }
+    }
+
+    refresh();
+  </script>
+</body>
+</html>
